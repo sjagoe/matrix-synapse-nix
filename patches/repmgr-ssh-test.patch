@@ -1,0 +1,12 @@
+diff --git a/repmgr-client.c b/repmgr-client.c
+index 0e39bda45..15f1f28be 100644
+--- a/repmgr-client.c
++++ b/repmgr-client.c
+@@ -2940,6 +2940,7 @@ test_ssh_connection(char *host, char *remote_user)
+ 	 * because the target OS may differ from the source OS
+ 	 */
+ 	const char *bin_true_paths[] = {
++		"/run/current-system/sw/bin/true",
+ 		"/bin/true",
+ 		"/usr/bin/true",
+ 		NULL

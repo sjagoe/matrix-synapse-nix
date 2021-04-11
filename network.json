@@ -1,0 +1,64 @@
+{
+  "domain": "example.com",
+  "autoJoinRooms": [
+    "#announcements:example.com"
+  ],
+  "networks": {
+    "internal": {
+      "gateway": "10.36.0.1",
+      "address": "10.36.0.0",
+      "prefixLength": 24
+    },
+    "wireguard": {
+      "address": "10.37.0.0",
+      "prefixLength": 24
+    }
+  },
+  "element": {
+    "baseUrl": "element.example.com"
+  },
+  "maildomain": "mail.example.com",
+  "website": {
+    "enable": false
+  },
+  "synapse": {
+    "homeserver": "example.com",
+    "baseUrl": "matrix.example.com",
+    "enableRegistration": true,
+    "enableFederation": true,
+    "trustedServers": [
+      {
+        "server_name": "matrix.org",
+        "verify_keys": {
+          "ed25519:auto": "Noi6WqcDj0QmPxCNQqgezwTlBKrfqehY1u2FyWP9uYw"
+        }
+      }
+    ],
+    "ulimit": {
+      "nofile": 8192
+    }
+  },
+  "jitsi": {
+    "baseUrl": "jitsi.example.com"
+  },
+  "turn": {
+    "baseUrl": "turn.example.com"
+  },
+  "metrics": {
+    "publicDomain": "metrics.example.com",
+    "metricsHost": "metrics1.example.com",
+    "metricsPort": 8094
+  },
+  "aws": {
+    "sesEndpoint": "email-smtp.eu-west-1.amazonaws.com",
+    "smtpPort": "587"
+  },
+  "restic": {
+    "pruneOpts": [
+      "--keep-daily 7",
+      "--keep-weekly 5",
+      "--keep-monthly 12",
+      "--keep-yearly 2"
+    ]
+  }
+}
