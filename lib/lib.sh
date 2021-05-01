@@ -134,7 +134,7 @@ function serverinfo() {
 
     name="$(fqdn2name "$fqdn")"
     hcloudinfo="$(hcloud server describe "$name" -ojson)"
-    info="$(jq --argjson hcloud "$hcloudinfo" --arg fqdn "$fqdn" '. | {fqdn: $fqdn, created: $hcloud.created, datacenter: $hcloud.datacenter.name, id: $hcloud.id, name: $hcloud.name, ipv4: {public: {address: .public_net.ipv4.ip}}, ipv6: {prefix: .public_net.ipv6.ip}, type: .server_type.name, volumes: .volumes}')"
+    info="$(echo "$hcloudinfo" | jq  --arg fqdn "$fqdn" '{fqdn: $fqdn, created: .created, datacenter: .datacenter.name, id: .id, name: .name, ipv4: {public: {address: .public_net.ipv4.ip}}, ipv6: {prefix: .public_net.ipv6.ip}, type: .server_type.name, volumes: .volumes}')"
 
     jq --argjson info "$info" '. + $info' < "$hostInfoPath" > "${hostInfoPath}.tmp"
     mv "${hostInfoPath}.tmp" "$hostInfoPath"
@@ -229,7 +229,7 @@ function createserver() {
 
     if [[ "$volumesize" -gt 0 ]]; then
         volume="$(createvolume "$fqdn" "$location" "$volumesize")"
-        hcloud volume attach --server "$id" "$volume"
+        hcloud volume attach --server "$id" "$volume" 1>&2
     fi
 
     serverinfo "$fqdn"
@@ -242,6 +242,7 @@ function createserver() {
 
     log "Updating $fqdn reverse DNS"
     hcloud server set-rdns -r "$fqdn" "$name" 1>&2
+    hcloud server set-rdns -i "$ipv6" -r "$fqdn" "$name" 1>&2
 
     log "Server $fqdn created"
     echo "$id"
@@ -527,8 +528,8 @@ function reinstallserver() {
 
 function installserver() {
     local fqdn="$1"
-    local id="$2"
-    local sshkeyname="$3"
+    local sshkeyname="$2"
+    local id=
     local regenkeys=
     set +u
     if [[ -n "$4" ]]; then
@@ -541,6 +542,7 @@ function installserver() {
     local name=
     local domain=
     local privateIp=
+    local privatePrefixLength=
     local wireguardIp=
     local serverInfo=
     local volumes=
@@ -548,16 +550,20 @@ function installserver() {
     local volumeid=
     local volumename=
     local volumeInstalled=
+    local adminUser=
+    local adminSSHKeys=
     declare -a files_to_copy
 
     log "Preparing to install $fqdn"
 
+    id="$(getServerInfo "$fqdn" ".id")"
     name="$(fqdn2name "$fqdn")"
     domain="$(fqdn2domain "$fqdn")"
-    privateIp="$(getServerInfo "$fqdn" ".ipv4.internal")"
+    privateIp="$(getServerInfo "$fqdn" ".ipv4.internal.address")"
+    privatePrefixLength="$(getServerInfo "$fqdn" ".ipv4.internal.prefixLength")"
     log "Got private IP for $fqdn: $privateIp"
-    wireguardIp="$(getServerInfo "$fqdn" ".ipv4.wireguard" | sed 's/\/.*//')"
-    log "Got wireguard IP for $fqdn: $privateIp"
+    wireguardIp="$(getServerInfo "$fqdn" ".ipv4.wireguard.address")"
+    log "Got wireguard IP for $fqdn: $wireguardIp"
 
     ipaddr="$(hcloudServerIP "$fqdn")"
     log "Got public IP for $fqdn: $ipaddr"
@@ -610,6 +616,9 @@ function installserver() {
         volumeInstalled="$(hcloud volume describe "$volumeid" -ojson | jq -r '.labels["installed"]')"
     fi
 
+    adminUser="$(jq -r .ssh.nixopsAdmin < "$DIR/secrets.json")"
+    adminSSHKeys="$(jq -c --arg admin "$adminUser" '.ssh.users[$admin]' < "$DIR/secrets.json")"
+
     set +x
     log "Preparing install for $fqdn"
     echo "$lukskey" | ssh \
@@ -617,7 +626,9 @@ function installserver() {
                           -o UserKnownHostsFile=/dev/null \
                           -i "$identityfile" \
                           "root@${ipaddr}" \
-                          ./cloud-install-rescue.sh "$name" "$domain" "$privateIp" "$volumeInstalled"
+                          ./cloud-install-rescue.sh \
+                          "$name" "$domain" "$privateIp/${privatePrefixLength}" \
+                          "$adminUser" "$adminSSHKeys" "$volumeInstalled"
 
     if [[ "$volumeCount" -gt 0 ]] && [[ -z "$volumeInstalled" ]]; then
         hcloud volume add-label "$volumeid" installed=true || true
@@ -723,7 +734,7 @@ function destroyserver() {
 
     hcloud server poweroff "$id"
     ipaddr="$(hcloudServerIP "$fqdn")"
-    wireguardIp="$(getServerInfo "$fqdn" ".ipv4.wireguard" | sed 's/\/.*//')"
+    wireguardIp="$(getServerInfo "$fqdn" ".ipv4.wireguard.address")"
 
     if [[ "$volumeCount" -gt 0 ]]; then
         hcloud volume detach "$volumeid"

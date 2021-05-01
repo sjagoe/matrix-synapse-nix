@@ -40,13 +40,13 @@ def allocate_new_ip(network_name, hosts_dir, networks_json):
     with open(networks_json) as fh:
         networks = json.loads(fh.read())['networks']
 
-    network = networks.get(network_name)
+    network = '{address}/{prefixLength}'.format(**networks.get(network_name))
     if network is None:
         raise Exception(f'Network {network_name} does not exist')
     network = IPNetwork(network)
 
     used_addresses = sorted(
-        IPNetwork(host['ipv4'][network_name]).ip
+        IPAddress(host['ipv4'][network_name]['address'])
         for host in hosts
         if network_name in host['ipv4']
     )
@@ -67,11 +67,11 @@ def write_ip(host_json_path, network_name, network, ip_address, prefix_length):
         with open(host_json_path) as fh:
             host_data = json.loads(fh.read())
     ipv4 = host_data.setdefault('ipv4', {})
-    ipv4.setdefault[network_name] = {
+    ipv4.setdefault(network_name, {
         'network': str(network),
         'address': str(ip_address),
         'prefixLength': prefix_length,
-    }
+    })
     with open(host_json_path, 'w') as fh:
         fh.write(json.dumps(host_data, indent=4, sort_keys=True))
 

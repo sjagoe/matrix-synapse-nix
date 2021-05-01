@@ -168,6 +168,10 @@ function writeConfig() {
     local publicInterface="$3"
     local privateInterface="$4"
     local privateIp="$5"
+    local adminUser="$6"
+    declare -a adminSSHKeys
+    mapfile -t adminSSHKeys < <(echo "$7" | jq '.[]')
+
     # Extend/override default `configuration.nix`:
     cat <<EOF >/mnt/etc/nixos/configuration.nix
 # Edit this configuration file to define what should be installed on
@@ -201,8 +205,7 @@ function writeConfig() {
         /etc/secrets/initrd/ssh_host_ed25519_key
       ];
       authorizedKeys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA+CPpHwa9vkV+AyL+Nv4cDphhTssu9ub0+AzpAjQv0G sjagoe@simon-x1"
-        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/64+VByIx/GYRUZz/wtban8TNafCAw40tC+El+FNNFEDDdXenlXm3KuHDFYun1wsDhdSdUPiNC9kKouFe8OiHWV/htiGuu/oj+GfLpyn3VmyxANRdpgLEXCSPCUNOS66lo0DeilWjoFCt0lm3dCaS4lIzG8BmoRpbh21R37c5D59eqlepg3txT0gBPNhTjuC9Pwy9xaxyNsQxGA2TzT/WljYrDeqlc8ZFpIX2XaHzLQOAETiMYIb9sCdA3pgMbkNzRoFNyM7PNREcYzihKRG4Rt/I26gu++RWrfm9bINV58TkVZJ4FEtThDZFFNu4M7ZrZpPWIUuPaFK57km3+q5Bppj2KfGvGLAr3WzR0+hj7JPO9jOFlzUFmKsRoBpvsi6NlxPsYtphzdLOozlr+EVYRLKTcztpb46dI9RO/lsET0MQ/k/9U3eVv18KgMjMWy+1LalQhF5Ift+qT4m5nAPQSK190wInNC+g0eW1Dm97YbgpCEEd6gr2Qsm0Xk6b2e3Az6WKffoWcyJQY84gWa8UicyHwwVU698IZgJNdJQyTXtJxOMgduixsHFV6L4w3cLEMYXhIJ33w4F8HeqYIsT9Hi55EimCTPVjggCDw2cT7B0Ss51hQhLgtGhNxKYT9t2IOedf6gPZlkn0NM+2dYKQATkhzA0jQcCkiZ7d3B/KlQ== sjagoe@simon-x1"
+${adminSSHKeys[@]}
       ];
     };
   };
@@ -297,16 +300,15 @@ function writeConfig() {
     };
   };
 
-  nix.trustedUsers = [ "sjagoe" ];
+  nix.trustedUsers = [ "$adminUser" ];
   security.sudo.wheelNeedsPassword = false;
   users.users = {
-    sjagoe = {
+    $adminUser = {
       isNormalUser = true;
-      home = "/home/sjagoe";
+      home = "/home/$adminUser";
       extraGroups = [ "wheel" ];
       openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA+CPpHwa9vkV+AyL+Nv4cDphhTssu9ub0+AzpAjQv0G sjagoe@simon-x1"
-        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC/64+VByIx/GYRUZz/wtban8TNafCAw40tC+El+FNNFEDDdXenlXm3KuHDFYun1wsDhdSdUPiNC9kKouFe8OiHWV/htiGuu/oj+GfLpyn3VmyxANRdpgLEXCSPCUNOS66lo0DeilWjoFCt0lm3dCaS4lIzG8BmoRpbh21R37c5D59eqlepg3txT0gBPNhTjuC9Pwy9xaxyNsQxGA2TzT/WljYrDeqlc8ZFpIX2XaHzLQOAETiMYIb9sCdA3pgMbkNzRoFNyM7PNREcYzihKRG4Rt/I26gu++RWrfm9bINV58TkVZJ4FEtThDZFFNu4M7ZrZpPWIUuPaFK57km3+q5Bppj2KfGvGLAr3WzR0+hj7JPO9jOFlzUFmKsRoBpvsi6NlxPsYtphzdLOozlr+EVYRLKTcztpb46dI9RO/lsET0MQ/k/9U3eVv18KgMjMWy+1LalQhF5Ift+qT4m5nAPQSK190wInNC+g0eW1Dm97YbgpCEEd6gr2Qsm0Xk6b2e3Az6WKffoWcyJQY84gWa8UicyHwwVU698IZgJNdJQyTXtJxOMgduixsHFV6L4w3cLEMYXhIJ33w4F8HeqYIsT9Hi55EimCTPVjggCDw2cT7B0Ss51hQhLgtGhNxKYT9t2IOedf6gPZlkn0NM+2dYKQATkhzA0jQcCkiZ7d3B/KlQ== sjagoe@simon-x1"
+${adminSSHKeys[@]}
       ];
     };
   };
@@ -322,9 +324,12 @@ EOF
     NIXOS_HOSTNAME="$1"
     DOMAIN="$2"
     PRIVATE_IP="$3"
+    ADMIN_USER="$4"
+    ADMIN_SSH_KEYS="$5"
     set +u
-    VOLUME_ALREADY_INSTALLED="$4"
+    VOLUME_ALREADY_INSTALLED="$6"
     set -u
+
     export INFO_JSON="/root/$NIXOS_HOSTNAME.json"
 
     echo "Installing initial requirements"
@@ -372,5 +377,6 @@ EOF
     recordInterface "$NIXOS_INTERFACE" "public"
     recordInterface "$PRIVATE_INTERFACE" "internal"
 
-    writeConfig "$NIXOS_HOSTNAME" "$DOMAIN" "$NIXOS_INTERFACE" "$PRIVATE_INTERFACE" "$PRIVATE_IP"
+    writeConfig "$NIXOS_HOSTNAME" "$DOMAIN" "$NIXOS_INTERFACE" "$PRIVATE_INTERFACE" \
+                "$PRIVATE_IP" "$ADMIN_USER" "$ADMIN_SSH_KEYS"
 }
