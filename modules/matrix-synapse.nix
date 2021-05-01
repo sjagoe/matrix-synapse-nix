@@ -236,7 +236,7 @@ in
             }
             location / {
                 allow all;
-          '' + ( if networkInfo.website.enable then ''
+          '' + (if networkInfo.website.enable then ''
                 root ${pkgs.vectornet-web};
           '' else ''
                 return 302 https://${networkInfo.element.baseUrl};
@@ -519,8 +519,7 @@ in
 
   environment.systemPackages = [
     pkgs.element-web
-    pkgs.vectornet-web
-  ];
+  ] ++ (lib.optional networkInfo.website.enable pkgs.vectornet-web);
 
   nixpkgs.overlays = [
     (self: super: {
@@ -573,17 +572,17 @@ in
           # jitsi.preferredDomain = "${networkInfo.jitsi.baseUrl}";
         };
       };
-    })
-    (self: super: {
-      vectornet-web =
-        super.stdenv.mkDerivation {
-          pname = "vectornet-web";
-          version = "0.0.1";
-          src = ../pkgs/site/src;
+    })]
+  ++ (lib.optional networkInfo.website.enable (self: super: {
+    vectornet-web =
+      super.stdenv.mkDerivation {
+        pname = "vectornet-web";
+        version = "0.0.1";
+        src = ../pkgs/site/src;
 
-          buildInputs = [ super.hugo ];
+        buildInputs = [ super.hugo ];
 
-          installPhase = ''
+        installPhase = ''
             runHook preInstall
 
             mkdir -p $out/
@@ -592,12 +591,11 @@ in
             runHook postInstall
           '';
 
-          meta = with lib; {
-            description = "The ${networkInfo.domain} matrix homeserver website";
-            homepage = "https://${networkInfo.domain}/";
-            maintainers = with maintainers; [ sjagoe ];
-          };
+        meta = with lib; {
+          description = "The ${networkInfo.domain} matrix homeserver website";
+          homepage = "https://${networkInfo.domain}/";
+          maintainers = with maintainers; [ sjagoe ];
         };
-    })
-  ];
+      };
+  }));
 }
