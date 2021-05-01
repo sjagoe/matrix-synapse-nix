@@ -49,6 +49,9 @@
     "metricsHost": "metrics1.example.com",
     "metricsPort": 8094
   },
+  "postgres": {
+    "repmgrdEnabled": true
+  },
   "aws": {
     "sesEndpoint": "email-smtp.eu-west-1.amazonaws.com",
     "smtpPort": "587"

@@ -1,4 +1,4 @@
-{ repmgrdEnabled ? true, ... }:
+{}:
 
 let
   readHostData = import ./lib/read-host-data.nix;
@@ -31,7 +31,7 @@ in
         ./modules/machine-config.nix
         ./modules/postgres.nix
         ./modules/restic.nix
-      ] ++ (if repmgrdEnabled then [ ./modules/repmgrd.nix ] else []);
+      ] ++ (if networkInfo.postgres.repmgrdEnabled then [ ./modules/repmgrd.nix ] else []);
       deployment = deploymentInfo name;
     };
 
@@ -42,7 +42,7 @@ in
         ./modules/machine-config.nix
         ./modules/postgres.nix
         ./modules/restic.nix
-      ] ++ (if repmgrdEnabled then [ ./modules/repmgrd.nix ] else []);
+      ] ++ (if networkInfo.postgres.repmgrdEnabled then [ ./modules/repmgrd.nix ] else []);
       deployment = deploymentInfo name;
     };
 
