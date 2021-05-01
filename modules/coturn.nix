@@ -41,6 +41,7 @@ in
     };
   };
 
+  networking.enableIPv6 = false;
   networking.firewall.allowedTCPPorts = pkgs.lib.mkForce [ 3478 3479 5349 5350 ];
   networking.firewall.allowedUDPPorts = pkgs.lib.mkForce ([ 3478 3479 5349 5350 ] ++ (pkgs.lib.range 49152 65535));
   networking.firewall.interfaces."${host.interfaces.public}" = {
@@ -73,7 +74,7 @@ in
       cert = "${certDirectory}/fullchain.pem";
       pkey = "${certDirectory}/key.pem";
       extraConfig = ''
-        user-quota=64
+        user-quota=128
         total-quota=4200
         denied-peer-ip=10.0.0.0-10.255.255.255
         denied-peer-ip=192.168.0.0-192.168.255.255
