@@ -18,6 +18,7 @@ let
       - type: "http"
         bind_address: "127.0.0.1"
         port: ${toString listenPort}
+        x_forwarded: true
         resources:
           - names:
             - "client"
