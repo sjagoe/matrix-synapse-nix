@@ -434,7 +434,7 @@ in
           resources = [{ compress = false; names = [ "metrics" ]; }];
         }
       ];
-      turn_user_lifetime = "86400000";
+      turn_user_lifetime = "1h";
       turn_uris = [
         "turns:${networkInfo.turn.baseUrl}?transport=udp"
         "turns:${networkInfo.turn.baseUrl}?transport=tcp"
