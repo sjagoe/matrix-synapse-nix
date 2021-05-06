@@ -52,7 +52,7 @@ let
         ${oldSigningKeys}
         trusted_key_servers:
         ${trustedKeyServers}
-      '' + (pkgs.lib.optionalString ((builtins.length workers.ports.userDir) > 0) ''
+      '' + (pkgs.lib.optionalString ((builtins.length workers.workersConfig.listeners.user-dir.ports) > 0) ''
         update_user_directory: False
       '') + (pkgs.lib.optionalString ((builtins.length workers.federationSenders) > 0) ''
         send_federation: False
@@ -174,6 +174,10 @@ in
   networking.firewall.interfaces.wg0.allowedTCPPorts = [ mainMetricsPort ] ++ workers.allMetricsPorts;
 
   services.nginx =
+    let
+      nameUpstream = name: builtins.replaceStrings ["-"] ["_"] name;
+      listenerWorkers = lib.mapAttrsFlatten (k: v: ({name = k;} // v)) workers.workersConfig.listeners;
+    in
     {
       enable = true;
       appendHttpConfig =
@@ -184,31 +188,22 @@ in
             in
               sep + (builtins.concatStringsSep "\n${sep}"
                 (map (port: "server localhost:${toString port};") ports));
+          makeUpstream = config: ''
+            upstream ${nameUpstream config.name} {
+              ${lib.optionalString (builtins.hasAttr "hash" config) "${config.hash};"}
+              ${makeBackends config.ports}
+            }
+          '';
+          upstreams =
+            lib.concatMapStringsSep "\n" makeUpstream listenerWorkers;
         in
           ''
             upstream synapse_main {
               server localhost:${toString synapsePort};
             }
-            upstream synapse_initial_sync {
-            ${makeBackends workers.ports.initialSync}
-            }
-            upstream synapse_client_api {
-            ${makeBackends workers.ports.clientApi}
-            }
-            upstream federation_requests_api {
-            ${makeBackends workers.ports.federationRequestsApi}
-            }
-            upstream inbound_federation_requests_api {
-            ip_hash;
-            ${makeBackends workers.ports.inboundFederationRequestsApi}
-            }
-            upstream user_dir_workers {
-            ${makeBackends workers.ports.userDir}
-            }
-            upstream frontend_proxy_workers {
-            ${makeBackends workers.ports.frontendProxy}
-            }
+            ${upstreams}
           '';
+
       virtualHosts = {
         ${homeserverDomain} = {
           default = false;
@@ -249,6 +244,7 @@ in
           useACMEHost = name;
           extraConfig =
             let
+              proxy' = backend: match: (proxy match backend);
               proxy = match: backend: ''
                 location ~* ${match} {
                     allow all;
@@ -264,6 +260,10 @@ in
                     client_max_body_size 10M;
                 }
               '';
+              makeWorkerProxies = config:
+                lib.concatMapStringsSep "\n" (proxy' (nameUpstream config.name)) config.routes;
+
+              workerProxies = lib.concatMapStringsSep "\n" makeWorkerProxies listenerWorkers;
             in
             ''
               location = /robots.txt {
@@ -285,56 +285,10 @@ in
                   add_header Access-Control-Allow-Origin *;
               }
               # Locations from https://github.com/matrix-org/synapse/blob/develop/docs/workers.md
-              # Sync requests
-              ${proxy "^/_matrix/client/(v2_alpha|r0)/sync$" "synapse_initial_sync"}
-              ${proxy "^/_matrix/client/(api/v1|v2_alpha|r0)/events$" "synapse_initial_sync"}
-              ${proxy "^/_matrix/client/(api/v1|r0)/initialSync$" "synapse_initial_sync"}
-              ${proxy "^/_matrix/client/(api/v1|r0)/rooms/[^/]+/initialSync$" "synapse_initial_sync"}
-              # Federation requests
-              ${proxy "^/_matrix/federation/v1/event/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/state/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/state_ids/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/backfill/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/get_missing_events/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/publicRooms" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/query/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/make_join/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/make_leave/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/send_join/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v2/send_join/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/send_leave/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v2/send_leave/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/invite/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v2/invite/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/query_auth/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/event_auth/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/exchange_third_party_invite/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/user/devices/" "federation_requests_api"}
-              ${proxy "^/_matrix/federation/v1/get_groups_publicised$" "federation_requests_api"}
-              ${proxy "^/_matrix/key/v2/query" "federation_requests_api"}
-              # Inbound federation transaction request
-              ${proxy "^/_matrix/federation/v1/send/" "inbound_federation_requests_api"}
-              # Client API requests
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/publicRooms$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/joined_members$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/context/.*$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/members$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/state$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/account/3pid$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/devices$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/keys/query$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/keys/changes$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/versions$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/voip/turnServer$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/joined_groups$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/publicised_groups$" "synapse_client_api"}
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/publicised_groups/" "synapse_client_api"}
-              # User directory worker
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/user_directory/search$" "user_dir_workers"}
-              # Frontend proxy (frequent-access client requests)
-              ${proxy "^/_matrix/client/(api/v1|r0|unstable)/keys/upload" "frontend_proxy_workers"}
+              ${workerProxies}
               # Fallback to the main process
               ${proxy "^(\/_matrix|\/_synapse\/client)" "synapse_main"}
+              # TODO get health of all workers for external healthcheck
               ${proxy "^/health$" "synapse_main"}
               location / {
                   allow all;

@@ -1,0 +1,89 @@
+{
+  "listeners": {
+    "initial-sync": {
+      "ports": [8083],
+      "entrypoint": "generic_worker",
+      "routes": [
+        "^/_matrix/client/(v2_alpha|r0)/sync$",
+        "^/_matrix/client/(api/v1|v2_alpha|r0)/events$",
+        "^/_matrix/client/(api/v1|r0)/initialSync$",
+        "^/_matrix/client/(api/v1|r0)/rooms/[^/]+/initialSync$"
+      ]
+    },
+    "client-api": {
+      "ports": [8093, 8094],
+      "entrypoint": "generic_worker",
+      "routes": [
+        "^/_matrix/client/(api/v1|r0|unstable)/publicRooms$",
+        "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/joined_members$",
+        "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/context/.*$",
+        "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/members$",
+        "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/state$",
+        "^/_matrix/client/(api/v1|r0|unstable)/account/3pid$",
+        "^/_matrix/client/(api/v1|r0|unstable)/devices$",
+        "^/_matrix/client/(api/v1|r0|unstable)/keys/query$",
+        "^/_matrix/client/(api/v1|r0|unstable)/keys/changes$",
+        "^/_matrix/client/versions$",
+        "^/_matrix/client/(api/v1|r0|unstable)/voip/turnServer$",
+        "^/_matrix/client/(api/v1|r0|unstable)/joined_groups$",
+        "^/_matrix/client/(api/v1|r0|unstable)/publicised_groups$",
+        "^/_matrix/client/(api/v1|r0|unstable)/publicised_groups/"
+      ]
+    },
+    "federation-requests": {
+      "ports": [8103, 8104],
+      "entrypoint": "generic_worker",
+      "routes": [
+        "^/_matrix/federation/v1/event/",
+        "^/_matrix/federation/v1/state/",
+        "^/_matrix/federation/v1/state_ids/",
+        "^/_matrix/federation/v1/backfill/",
+        "^/_matrix/federation/v1/get_missing_events/",
+        "^/_matrix/federation/v1/publicRooms",
+        "^/_matrix/federation/v1/query/",
+        "^/_matrix/federation/v1/make_join/",
+        "^/_matrix/federation/v1/make_leave/",
+        "^/_matrix/federation/v1/send_join/",
+        "^/_matrix/federation/v2/send_join/",
+        "^/_matrix/federation/v1/send_leave/",
+        "^/_matrix/federation/v2/send_leave/",
+        "^/_matrix/federation/v1/invite/",
+        "^/_matrix/federation/v2/invite/",
+        "^/_matrix/federation/v1/query_auth/",
+        "^/_matrix/federation/v1/event_auth/",
+        "^/_matrix/federation/v1/exchange_third_party_invite/",
+        "^/_matrix/federation/v1/user/devices/",
+        "^/_matrix/federation/v1/get_groups_publicised$",
+        "^/_matrix/key/v2/query"
+      ]
+    },
+    "inbound-federation-requests": {
+      "ports": [8113, 8114],
+      "entrypoint": "generic_worker",
+      "hash": "ip_hash",
+      "routes": [
+        "^/_matrix/federation/v1/send/"
+      ]
+    },
+    "user-dir": {
+      "ports": [8123],
+      "entrypoint": "user_dir",
+      "routes": [
+        "^/_matrix/client/(api/v1|r0|unstable)/user_directory/search$"
+      ]
+    },
+    "frontend-proxy": {
+      "ports": [8133],
+      "entrypoint": "frontend_proxy",
+      "routes": [
+        "^/_matrix/client/(api/v1|r0|unstable)/keys/upload"
+      ]
+    }
+  },
+  "background": {
+    "federation-sender": {
+      "entrypoint": "federation_sender",
+      "count": 2
+    }
+  }
+}

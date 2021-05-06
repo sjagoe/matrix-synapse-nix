@@ -2,6 +2,9 @@
   synapsePort, replicationPort, configFile, logConfigFile, matrixHome, synapseHost
 }:
 let
+  importJSON = import ./import-json.nix;
+  workersConfig = importJSON ../synapse-workers.json;
+
   metricsOffset = 1200;
   metricsIp = synapseHost.ipv4.wireguard.address;
   nameWorker = workerType: workerPort: "matrix-synapse-${workerType}-worker-${toString workerPort}";
@@ -90,36 +93,9 @@ let
         metricsPort = workerPort + metricsOffset;
         systemdService = makeListenerSystemd entrypoint workerName workerPort;
       };
-
-  ports = {
-    initialSync = [ 8083 ];
-    clientApi = [ 8093 8094 ];
-    federationRequestsApi = [ 8103 8104 ];
-    inboundFederationRequestsApi = [ 8113 8114 ];
-    userDir = [ 8123 ];
-    frontendProxy = [ 8133 ];
-  };
-
-  allWorkerPorts = builtins.concatLists (builtins.attrValues ports);
-
-  listeners =
+  makeBackgroundWorker = workerType: entrypoint: index:
     let
-      generic = entrypoints.generic_worker;
-      user_dir = entrypoints.user_dir;
-      frontend_proxy = entrypoints.frontend_proxy;
-    in
-      (map (makeListenerWorker generic "initial-sync") ports.initialSync) ++
-      (map (makeListenerWorker generic "client-api") ports.clientApi) ++
-      (map (makeListenerWorker generic "federation-requests") ports.federationRequestsApi) ++
-      (map (makeListenerWorker generic "inbound-federation-requests") ports.inboundFederationRequestsApi) ++
-      (map (makeListenerWorker user_dir "user-dir") ports.userDir) ++
-      (map (makeListenerWorker frontend_proxy "frontend-proxy") ports.frontendProxy);
-
-  makeFederationSender = index:
-    let
-      workerType = "federation-sender";
       workerName = nameWorker workerType index;
-      entrypoint = entrypoints.federation_sender;
       workerPort = 0;
       metricsPort = 9189 + index;
 
@@ -137,14 +113,29 @@ let
         };
       };
 
-  federationSenderCount = 2;
+  allWorkerPorts = builtins.concatLists
+    (pkgs.lib.mapAttrsFlatten (name: value: value.ports) workersConfig.listeners);
+
+  listeners =
+    let
+      makeWorker' = config:
+        map (makeListenerWorker config.entrypoint config.name) config.ports;
+    in
+      builtins.concatMap makeWorker'
+        (lib.mapAttrsFlatten (k: v: ({name = k;} // v)) workersConfig.listeners);
+
   federationSenders =
-    (map makeFederationSender (lib.range 1 federationSenderCount));
+    let
+      makeWorker' = null;
+      name = "federation-sender";
+      config = builtins.getAttr name workersConfig.background;
+    in
+      map (makeBackgroundWorker name config.entrypoint) (lib.range 1 config.count);
 
   backgroundWorkers = federationSenders;
 in
 {
-  inherit ports allWorkerPorts backgroundWorkers listeners federationSenders;
+  inherit workersConfig allWorkerPorts backgroundWorkers listeners federationSenders;
   allMetricsPorts =
     (map (p: p + metricsOffset) allWorkerPorts)
     ++ (map (w: w.metricsPort) backgroundWorkers);
