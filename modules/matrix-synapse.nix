@@ -173,6 +173,25 @@ in
   networking.firewall.interfaces."${publicInterface}".allowedTCPPorts = [ 80 443 ];
   networking.firewall.interfaces.wg0.allowedTCPPorts = [ mainMetricsPort ] ++ workers.allMetricsPorts;
 
+  services.logrotate =
+    {
+      enable = true;
+      paths = {
+        nginx = {
+          path = "/var/log/nginx/*.log";
+          user = config.services.nginx.user;
+          group = config.services.nginx.group;
+          keep = 112;
+          frequency = "weekly";
+          extraConfig = ''
+            compress
+            postrotate
+                [ ! -f /var/run/nginx/nginx.pid ] || kill -USR1 `cat /var/run/nginx/nginx.pid`
+            endscript
+          '';
+        };
+      };
+    };
   services.nginx =
     let
       nameUpstream = name: builtins.replaceStrings ["-"] ["_"] name;
