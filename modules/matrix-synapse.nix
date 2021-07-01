@@ -492,6 +492,11 @@ in
 
   environment.systemPackages = [
     pkgs.element-web
+    pkgs.matrix-synapse-tools.rust-synapse-compress-state
+    pkgs.matrix-synapse-tools.synadm
+    pkgs.postgresql_12
+    pkgs.jq
+    pkgs.synapse-find-unreferenced-state-groups
   ] ++ (lib.optional networkInfo.website.enable pkgs.vectornet-web);
 
   nixpkgs.overlays = [
@@ -545,6 +550,9 @@ in
           # jitsi.preferredDomain = "${networkInfo.jitsi.baseUrl}";
         };
       };
+    })
+    (self: super: {
+      synapse-find-unreferenced-state-groups = super.callPackage ../pkgs/synapse-find-unreferenced-state-groups { };
     })]
   ++ (lib.optional networkInfo.website.enable (self: super: {
     vectornet-web =
