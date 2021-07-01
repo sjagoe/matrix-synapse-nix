@@ -21,10 +21,12 @@ in
     bind = wireguardIp;
     port = redisPort;
     requirePassFile = "/run/keys/redis-require-pass";
-    extraConfig = ''
-      dir ${redisHome}
-    '';
+    settings = {
+      dir = pkgs.lib.mkForce redisHome;
+    };
   };
+
+  systemd.services.redis.serviceConfig.ReadWriteDirectories = "-${redisHome}";
 
   # Redis tried to start before the listening address was available
   systemd.services.redis.after = [ "openssh.service" "wireguard-wg0.service" "redis-require-pass-key.service" ];
