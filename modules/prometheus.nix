@@ -77,6 +77,10 @@ in
       }
     ];
 
+    ruleFiles = [
+      (pkgs.writeText "synapse-prometheus-v2.rules" (builtins.readFile ../files/synapse-prometheus-v2.rules))
+    ];
+
     exporters = {
       node = {
         enable = true;
