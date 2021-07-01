@@ -63,5 +63,19 @@
       "--keep-monthly 12",
       "--keep-yearly 2"
     ]
+  },
+  "postgres": {
+    "db1.example.com": {
+      "shared_buffers": "1943MB",
+      "effective_cache_size": "4820MB",
+      "work_mem": "20MB",
+      "maintenance_work_mem": "320MB"
+    },
+    "db2.example.com": {
+      "shared_buffers": "960MB",
+      "effective_cache_size": "2382MB",
+      "work_mem": "10MB",
+      "maintenance_work_mem": "128MB"
+    }
   }
 }

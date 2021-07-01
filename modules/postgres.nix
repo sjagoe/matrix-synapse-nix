@@ -3,7 +3,8 @@ let
   iputils = import ../lib/iputils.nix;
   readHostData = import ../lib/read-host-data.nix;
   secrets = import ../lib/global-secrets.nix;
-  networks = (import ../lib/network-info.nix).networks;
+  networkInfo = import ../lib/network-info.nix;
+  networks = networkInfo.networks;
 
   postgresHome = "/data/postgresql";
   monitoringUser = "telegraf";
@@ -142,20 +143,21 @@ in
       wal_level = "replica";
       max_wal_senders = 10;
       max_replication_slots = 10;
-      wal_keep_segments = 10;
+      wal_keep_segments = 30;
       archive_mode = "on";
       archive_command = "/run/current-system/sw/bin/true";
       # Required for repmgrd
       shared_preload_libraries = "repmgr";
+      ################
       # Tuning parameters; change for instance sizes
       # https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server
-      shared_buffers = "131072";  # Unit of 8kB; this is 1GB or 1/4 of RAM
+      # shared_buffers is Unit of 8kB; this is 2GB or 1/4 of RAM
       # Set these when using larger server
-      effective_cache_size = "327680";  # 2.5x shared_buffers, or ~62% of available RAM
+      # effective_cache_size: 2.5x shared_buffers, or ~62% of available RAM
       # work_mem
       # maintenance_work_mem
       # autovacuum_work_mem
-    };
+    } // networkInfo.postgres."${name}";
   };
   services.postgresqlBackup = {
     enable = true;
