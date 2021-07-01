@@ -5,6 +5,8 @@ be fixed as the project progresses.
 
 ## To do
 
+0. Add example host configurations and secrets
+
 1. Clean up workers configuration
 
    Currently worker setup requires adding a worker in
