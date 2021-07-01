@@ -12,11 +12,11 @@ let
   host = readHostData.info name;
 
   # Get device /dev/disk/by-uuid paths from host info
-  bootDevice = host.filesystem."/dev/sda1";
-  rootCryptDevice = host.luks."/dev/sda2";
-  rootDevice = host.filesystem."/dev/mapper/cryptroot";
-  dataCryptDevice = host.luks."/dev/sdb";
-  dataDevice = host.filesystem."/dev/mapper/data";
+  bootDevice = host.disks.boot.filesystem;
+  rootCryptDevice = host.disks.root.device;
+  rootDevice = host.disks.root.filesystem;
+  dataCryptDevice = host.disks.data.device;
+  dataDevice = host.disks.data.filesystem;
 
   # Network interface names
   publicInterface = host.interfaces.public;
@@ -89,7 +89,7 @@ in
   # boot.loader.systemd-boot.enable = true;
   boot.loader.grub.enable = true;
   boot.loader.grub.version = 2;
-  boot.loader.grub.devices = [ "/dev/sda" ];
+  boot.loader.grub.devices = [ host.disks.boot.device ];
   boot.loader.grub.enableCryptodisk = true;
 
   # Work around https://github.com/NixOS/nixpkgs/issues/91486
