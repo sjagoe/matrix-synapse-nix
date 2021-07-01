@@ -74,7 +74,6 @@ account_threepid_delegates:
   ${optionalString (cfg.account_threepid_delegates.email != null) "email: ${cfg.account_threepid_delegates.email}"}
   ${optionalString (cfg.account_threepid_delegates.msisdn != null) "msisdn: ${cfg.account_threepid_delegates.msisdn}"}
 
-room_invite_state_types: ${builtins.toJSON cfg.room_invite_state_types}
 ${optionalString (cfg.macaroon_secret_key != null) ''
   macaroon_secret_key: "${cfg.macaroon_secret_key}"
 ''}
