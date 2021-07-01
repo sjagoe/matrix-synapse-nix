@@ -455,6 +455,7 @@ in
   users.users.pgbouncer = {
     description = "pgbouncer daemon user";
     uid = 799;
+    isSystemUser = true;
     group = "pgbouncer";
   };
 
@@ -529,15 +530,15 @@ in
 
   nixpkgs.overlays = [
     (self: super: {
-      txredisapi = pkgs.python3.pkgs.buildPythonPackage rec {
+      txredisapi = super.python3.pkgs.buildPythonPackage rec {
         pname = "txredisapi";
         version = "1.4.7";
 
-        src = pkgs.python3.pkgs.fetchPypi {
+        src = super.python3.pkgs.fetchPypi {
           inherit pname version;
           sha256 = "1fqjr2z3wqgapa2fbxkr4vcf33ql1v9cgy58vjmhimim3vsl7k76";
         };
-        propagatedBuildInputs = [ pkgs.python3.pkgs.six pkgs.python3.pkgs.twisted ];
+        propagatedBuildInputs = [ super.python3.pkgs.six super.python3.pkgs.twisted ];
 
         doCheck = false;
         pythonImportsCheck = [ "txredisapi" ];
@@ -549,19 +550,40 @@ in
           maintainers = with maintainers; [ sjagoe ];
         };
       };
+      # Override matrix-synapse to set enableRedis = true (effectively
+      # only to NOT delete a whole test directory).  We then override
+      # attributes of this to set up our version, dependencies and
+      # patches.
+      matrix-synapse = super.matrix-synapse.override { enableRedis = true; };
+    })
+    (self: super: {
       # Needed txredisapi>=1.4.7 for the 'redis' feature but it was
       # not installed (also hiredis because now we're not using the
       # baked-in option of enableRedis in the build)
-      matrix-synapse = super.matrix-synapse.overrideAttrs (old: {
-        propagatedBuildInputs = with pkgs.python3.pkgs;
-          old.propagatedBuildInputs ++ [
-            hiredis
-            self.txredisapi
-          ];
-        patches = old.patches ++ [
-          ../patches/0001-Add-all-entrypoints.patch
-        ];
-      });
+      matrix-synapse =
+        let
+          version = "1.37.1";
+        in
+          super.matrix-synapse.overrideAttrs (old: {
+            inherit version;
+            name = "${old.pname}-${version}";
+            src = super.python3.pkgs.fetchPypi {
+              inherit (old) pname;
+              inherit version;
+              sha256 = "2b10c726b2a6fd0519b4ecc8e8c1292146f8853b71b483cb16e0f56acde3e040";
+            };
+            propagatedBuildInputs = with super.python3.pkgs;
+              old.propagatedBuildInputs ++ [
+                super.txredisapi
+                # Added in 1.35.0
+                ijson
+              ];
+
+            patches = [
+              ../patches/0001-Add-all-entrypoints.patch
+              ../patches/0002-PATCH-Drop-strict-version-constraint-for-cryptograph.patch
+            ];
+          });
     })
     (self: super: {
       element-web = super.element-web.override {
