@@ -66,7 +66,7 @@ in
   services.telegraf = {
     # enable = lib.mkForce false;
     extraConfig = {
-      outputs = {
+      outputs = lib.mkForce {
         influxdb = [
           { urls = [ "http://localhost:8086" ];
             database = "telegraf";
