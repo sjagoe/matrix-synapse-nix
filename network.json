@@ -24,7 +24,7 @@
   "synapse": {
     "homeserver": "example.com",
     "baseUrl": "matrix.example.com",
-    "enableRegistration": true,
+    "enableRegistration": false,
     "enableFederation": true,
     "trustedServers": [
       {
