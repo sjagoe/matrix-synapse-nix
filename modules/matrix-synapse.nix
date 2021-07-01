@@ -47,7 +47,7 @@ let
         auto_join_rooms:
         ${autoJoinRooms}
         presence:
-          enabled: false
+          enabled: true
         old_signing_keys:
         ${oldSigningKeys}
         trusted_key_servers:
