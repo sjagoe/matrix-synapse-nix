@@ -263,8 +263,8 @@ in
           useACMEHost = name;
           extraConfig =
             let
-              proxy' = backend: match: (proxy match backend);
-              proxy = match: backend: ''
+              proxy' = backend: extraConfig: match: (proxy match backend extraConfig);
+              proxy = match: backend: extraConfig: ''
                 location ~* ${match} {
                     allow all;
                     proxy_pass http://${backend};
@@ -277,10 +277,14 @@ in
                     proxy_buffering off;
 
                     client_max_body_size 50M;
+
+                    ${extraConfig}
                 }
               '';
+              makeWorkerProxies' = backend: workerRoutes:
+                lib.concatMapStringsSep "\n" (proxy' backend (lib.optionalString (builtins.hasAttr "extraConfig" workerRoutes) workerRoutes.extraConfig)) workerRoutes.paths;
               makeWorkerProxies = config:
-                lib.concatMapStringsSep "\n" (proxy' (nameUpstream config.name)) config.routes;
+                lib.concatMapStringsSep "\n" (makeWorkerProxies' (nameUpstream config.name)) config.routes;
 
               workerProxies = lib.concatMapStringsSep "\n" makeWorkerProxies listenerWorkers;
             in
@@ -306,9 +310,9 @@ in
               # Locations from https://github.com/matrix-org/synapse/blob/develop/docs/workers.md
               ${workerProxies}
               # Fallback to the main process
-              ${proxy "^(\/_matrix|\/_synapse\/client)" "synapse_main"}
+              ${proxy "^(\/_matrix|\/_synapse\/client)" "synapse_main" ""}
               # TODO get health of all workers for external healthcheck
-              ${proxy "^/health$" "synapse_main"}
+              ${proxy "^/health$" "synapse_main" ""}
               location / {
                   allow all;
                   return 404;

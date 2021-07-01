@@ -4,86 +4,133 @@
       "ports": [8083],
       "entrypoint": "generic_worker",
       "routes": [
-        "^/_matrix/client/(v2_alpha|r0)/sync$",
-        "^/_matrix/client/(api/v1|v2_alpha|r0)/events$",
-        "^/_matrix/client/(api/v1|r0)/initialSync$",
-        "^/_matrix/client/(api/v1|r0)/rooms/[^/]+/initialSync$"
+        {
+          "paths": [
+            "^/_matrix/client/(v2_alpha|r0)/sync$",
+            "^/_matrix/client/(api/v1|v2_alpha|r0)/events$",
+            "^/_matrix/client/(api/v1|r0)/initialSync$",
+            "^/_matrix/client/(api/v1|r0)/rooms/[^/]+/initialSync$"
+          ]
+        }
       ]
     },
     "client-api": {
       "ports": [8093, 8094],
       "entrypoint": "generic_worker",
       "routes": [
-        "^/_matrix/client/(api/v1|r0|unstable)/publicRooms$",
-        "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/joined_members$",
-        "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/context/.*$",
-        "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/members$",
-        "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/state$",
-        "^/_matrix/client/(api/v1|r0|unstable)/account/3pid$",
-        "^/_matrix/client/(api/v1|r0|unstable)/devices$",
-        "^/_matrix/client/(api/v1|r0|unstable)/keys/query$",
-        "^/_matrix/client/(api/v1|r0|unstable)/keys/changes$",
-        "^/_matrix/client/versions$",
-        "^/_matrix/client/(api/v1|r0|unstable)/voip/turnServer$",
-        "^/_matrix/client/(api/v1|r0|unstable)/joined_groups$",
-        "^/_matrix/client/(api/v1|r0|unstable)/publicised_groups$",
-        "^/_matrix/client/(api/v1|r0|unstable)/publicised_groups/"
+        {
+          "paths": [
+            "^/_matrix/client/(api/v1|r0|unstable)/publicRooms$",
+            "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/joined_members$",
+            "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/context/.*$",
+            "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/members$",
+            "^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/state$",
+            "^/_matrix/client/(api/v1|r0|unstable)/account/3pid$",
+            "^/_matrix/client/(api/v1|r0|unstable)/devices$",
+            "^/_matrix/client/(api/v1|r0|unstable)/keys/query$",
+            "^/_matrix/client/(api/v1|r0|unstable)/keys/changes$",
+            "^/_matrix/client/versions$",
+            "^/_matrix/client/(api/v1|r0|unstable)/voip/turnServer$",
+            "^/_matrix/client/(api/v1|r0|unstable)/joined_groups$",
+            "^/_matrix/client/(api/v1|r0|unstable)/publicised_groups$",
+            "^/_matrix/client/(api/v1|r0|unstable)/publicised_groups/"
+          ]
+        }
       ]
     },
     "federation-requests": {
-      "ports": [8103, 8104],
+      "ports": [8103, 8104, 8105],
       "entrypoint": "generic_worker",
       "routes": [
-        "^/_matrix/federation/v1/event/",
-        "^/_matrix/federation/v1/state/",
-        "^/_matrix/federation/v1/state_ids/",
-        "^/_matrix/federation/v1/backfill/",
-        "^/_matrix/federation/v1/get_missing_events/",
-        "^/_matrix/federation/v1/publicRooms",
-        "^/_matrix/federation/v1/query/",
-        "^/_matrix/federation/v1/make_join/",
-        "^/_matrix/federation/v1/make_leave/",
-        "^/_matrix/federation/v1/send_join/",
-        "^/_matrix/federation/v2/send_join/",
-        "^/_matrix/federation/v1/send_leave/",
-        "^/_matrix/federation/v2/send_leave/",
-        "^/_matrix/federation/v1/invite/",
-        "^/_matrix/federation/v2/invite/",
-        "^/_matrix/federation/v1/query_auth/",
-        "^/_matrix/federation/v1/event_auth/",
-        "^/_matrix/federation/v1/exchange_third_party_invite/",
-        "^/_matrix/federation/v1/user/devices/",
-        "^/_matrix/federation/v1/get_groups_publicised$",
-        "^/_matrix/key/v2/query"
+        {
+          "paths": [
+            "^/_matrix/federation/v1/event/",
+            "^/_matrix/federation/v1/state/",
+            "^/_matrix/federation/v1/state_ids/",
+            "^/_matrix/federation/v1/backfill/",
+            "^/_matrix/federation/v1/get_missing_events/",
+            "^/_matrix/federation/v1/publicRooms",
+            "^/_matrix/federation/v1/query/",
+            "^/_matrix/federation/v1/make_join/",
+            "^/_matrix/federation/v1/make_leave/",
+            "^/_matrix/federation/v1/send_join/",
+            "^/_matrix/federation/v2/send_join/",
+            "^/_matrix/federation/v1/send_leave/",
+            "^/_matrix/federation/v2/send_leave/",
+            "^/_matrix/federation/v1/invite/",
+            "^/_matrix/federation/v2/invite/",
+            "^/_matrix/federation/v1/query_auth/",
+            "^/_matrix/federation/v1/event_auth/",
+            "^/_matrix/federation/v1/exchange_third_party_invite/",
+            "^/_matrix/federation/v1/user/devices/",
+            "^/_matrix/federation/v1/get_groups_publicised$",
+            "^/_matrix/key/v2/query"
+          ]
+        }
       ]
     },
     "inbound-federation-requests": {
-      "ports": [8113, 8114],
+      "ports": [8113, 8114, 8115],
       "entrypoint": "generic_worker",
       "hash": "ip_hash",
       "routes": [
-        "^/_matrix/federation/v1/send/"
+        {
+          "paths": [
+            "^/_matrix/federation/v1/send/"
+          ]
+        }
       ]
     },
     "user-dir": {
       "ports": [8123],
       "entrypoint": "user_dir",
       "routes": [
-        "^/_matrix/client/(api/v1|r0|unstable)/user_directory/search$"
+        {
+          "paths": [
+            "^/_matrix/client/(api/v1|r0|unstable)/user_directory/search$"
+          ]
+        }
       ]
     },
     "frontend-proxy": {
       "ports": [8133],
       "entrypoint": "frontend_proxy",
       "routes": [
-        "^/_matrix/client/(api/v1|r0|unstable)/keys/upload"
+        {
+          "paths": [
+            "^/_matrix/client/(api/v1|r0|unstable)/keys/upload"
+          ]
+        }
+      ]
+    },
+    "event-sending-requests": {
+      "ports": [8143, 8144],
+      "entrypoint": "generic_worker",
+      "hash": "hash $upstream_hash_key",
+      "routes": [
+        {
+          "paths": [
+            "^/_matrix/client/(api/v1|r0|unstable)/rooms/(.*)/redact",
+            "^/_matrix/client/(api/v1|r0|unstable)/rooms/(.*)/send",
+            "^/_matrix/client/(api/v1|r0|unstable)/rooms/(.*)/state/",
+            "^/_matrix/client/(api/v1|r0|unstable)/rooms/(.*)/(join|invite|leave|ban|unban|kick)$"
+          ],
+          "extraConfig": "set $upstream_hash_key $2;"
+        },
+        {
+          "paths": [
+            "^/_matrix/client/(api/v1|r0|unstable)/join/",
+            "^/_matrix/client/(api/v1|r0|unstable)/profile/"
+          ],
+          "extraConfig": "set $upstream_hash_key $uri;"
+        }
       ]
     }
   },
   "background": {
     "federation-sender": {
       "entrypoint": "federation_sender",
-      "count": 2
+      "count": 3
     }
   }
 }
