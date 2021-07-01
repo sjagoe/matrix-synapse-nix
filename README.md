@@ -19,6 +19,8 @@ be fixed as the project progresses.
    of nixops makes it hard for other users to deploy/manage the same
    network as the state includes things like absolute paths on the
    host that runs the deployment.
+   
+   Another alternative to look at is colmena (https://github.com/zhaofengli/colmena)
 
 3. Make this a set of modules that are embedded in a separate
    configuration repository, rather than a monolithic server build
@@ -26,7 +28,7 @@ be fixed as the project progresses.
    reuse elsewhere.  Currently this is very tightly bound to a
    specific deployment.
 
-4. A lot of the nix code can probably be cleaned up generally; this
+4. A lot of the nix code should be cleaned up generally; this
    project has grown quite organically over time.
 
 ### Create a new server and install a base NixOS
