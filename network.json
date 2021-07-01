@@ -36,7 +36,8 @@
     ],
     "ulimit": {
       "nofile": 8192
-    }
+    },
+    "enableAdminForwarding": false
   },
   "jitsi": {
     "baseUrl": "jitsi.example.com"

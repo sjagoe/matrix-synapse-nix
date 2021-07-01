@@ -276,11 +276,34 @@ in
                     proxy_set_header Connection $connection_upgrade;
                     proxy_buffering off;
 
+                    proxy_send_timeout 60s;
+                    proxy_read_timeout 90s;
+
                     client_max_body_size 50M;
 
                     ${extraConfig}
                 }
               '';
+              proxyAdmin = match: backend:
+                (pkgs.lib.optionalString networkInfo.synapse.enableAdminForwarding
+                ''
+                  location ~* ${match} {
+                      allow all;
+                      proxy_pass http://${backend};
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Forwarded-Proto $scheme;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header Upgrade $http_upgrade;
+                      proxy_set_header Connection $connection_upgrade;
+                      proxy_buffering off;
+
+                      proxy_send_timeout 180s;
+                      proxy_read_timeout 1800s;
+
+                      client_max_body_size 50M;
+                  }
+                '');
               makeWorkerProxies' = backend: workerRoutes:
                 lib.concatMapStringsSep "\n" (proxy' backend (lib.optionalString (builtins.hasAttr "extraConfig" workerRoutes) workerRoutes.extraConfig)) workerRoutes.paths;
               makeWorkerProxies = config:
@@ -311,6 +334,7 @@ in
               ${workerProxies}
               # Fallback to the main process
               ${proxy "^(\/_matrix|\/_synapse\/client)" "synapse_main" ""}
+              ${proxyAdmin "^\/_synapse\/admin" "synapse_main"}
               # TODO get health of all workers for external healthcheck
               ${proxy "^/health$" "synapse_main" ""}
               location / {
