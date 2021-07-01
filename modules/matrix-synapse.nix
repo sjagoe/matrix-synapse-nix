@@ -276,7 +276,7 @@ in
                     proxy_set_header Connection $connection_upgrade;
                     proxy_buffering off;
 
-                    client_max_body_size 10M;
+                    client_max_body_size 50M;
                 }
               '';
               makeWorkerProxies = config:
@@ -369,7 +369,7 @@ in
       public_baseurl = "https://${networkInfo.synapse.baseUrl}";
       server_name = "${networkInfo.synapse.homeserver}";
       enable_registration = networkInfo.synapse.enableRegistration;
-      max_upload_size = "10M";
+      max_upload_size = "50M";
       dataDir = matrixHome;
       enable_metrics = true;
       listeners = [
