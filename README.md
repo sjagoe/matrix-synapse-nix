@@ -1,4 +1,4 @@
-# Infrastructure for vectornet
+# matrix synapse with nixops
 
 There are still some references to my own user and ssh key. These will
 be fixed as the project progresses.
